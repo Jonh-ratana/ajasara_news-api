@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-import feedparser, requests, json, os, time
+import feedparser, requests, json, os
 from bs4 import BeautifulSoup
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor
@@ -11,9 +11,9 @@ TELEGRAM_CHAT_ID = "6752369289"
 TELEGRAM_BOT_TOKEN = "8276152927:AAFqpLdt5z-9P9Q54DVC2OCr3umLIlopt8U"
 SENT_FILE = "sent_articles.json"
 DEBUG_MODE = True
-CHECK_INTERVAL = 60   # ពិនិត្យរៀងរាល់ 60 វិនាទី (1 នាទី)
-IGNORE_SENT = False   # សំខាន់: មិនបញ្ជូនអត្ថបទចាស់ម្ដងទៀត
-IGNORE_DATE = True    # អាចបើក/បិទ ប្រសិនបើចង់ចាប់តែថ្ងៃនេះ
+CHECK_INTERVAL = 60   # ពិនិត្យរៀងរាល់ 60 វិនាទី
+IGNORE_SENT = False   # ផ្ញើតែអត្ថបទថ្មី
+IGNORE_DATE = True    # បើចង់ចាប់តែថ្ងៃនេះ → False
 
 app = Flask(__name__)
 CORS(app)
@@ -111,6 +111,15 @@ scheduler.start()
 
 # Run first
 check_and_send()
+
+# === API Route ===
+@app.route('/news')
+def get_news():
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(fetch_articles, RSS_FEEDS))
+    articles = [item for sublist in results for item in sublist]
+    return jsonify(articles)
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
